@@ -1,0 +1,179 @@
+<!doctype html>
+<html lang="ja"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>UTM・MGRS 座標計算</title>
+<link rel="manifest" href="./manifest.webmanifest">
+<meta name="theme-color" content="#17324d">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="座標計算">
+<link rel="apple-touch-icon" href="./apple-touch-icon.png">
+<style>
+:root{font-family:system-ui,-apple-system,"Noto Sans JP",sans-serif;color:#19314b;background:#f4f7fa}
+*{box-sizing:border-box}body{margin:0;padding:18px 15px 32px}
+header{background:#17324d;color:#fff;margin:-18px -15px 20px;padding:25px 18px 21px}
+h1{font-size:21px;margin:0 0 7px}header p{font-size:12px;color:#d6e8f0;margin:0}
+.tabs{display:flex;gap:8px;margin-bottom:15px}
+.tabs button{flex:1;border:1px solid #c8d9e4;background:#fff;border-radius:11px;padding:13px 7px;font-size:15px;font-weight:700;color:#25435b}
+.tabs button.active{background:#087e8b;color:#fff;border-color:#087e8b}
+.panel{display:none}.panel.active{display:block}
+.card{background:#fff;border:1px solid #e0e8ee;border-radius:15px;padding:17px;margin:0 0 15px;box-shadow:0 2px 9px #102b4410}
+h2{font-size:16px;margin:0 0 15px}
+.fields{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.field{min-width:0}.wide{grid-column:1/-1}
+label{font-size:12px;color:#49647b;display:block;margin-bottom:6px;font-weight:650}
+input,select{width:100%;padding:12px 10px;border:1px solid #bfd3df;background:#f1f7ff;border-radius:9px;color:#17324d;font-size:16px;min-width:0}
+input:focus,select:focus{outline:2px solid #087e8b;outline-offset:1px}
+.go{background:#087e8b;color:#fff;border:0;border-radius:10px;padding:14px;font-size:16px;font-weight:700;width:100%;margin-top:16px}
+.result{background:#eaf5f6;border-radius:12px;padding:14px;margin-top:14px}
+.result small{display:block;color:#52707b;font-size:12px;margin-bottom:5px}
+.result strong{font-size:20px;overflow-wrap:anywhere;display:block;font-variant-numeric:tabular-nums}
+.result .pair{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px}
+.result .pair strong{font-size:18px}
+.result .mgrs{border-top:1px solid #c8e2e2;padding-top:12px}
+.error{color:#a02727;font-size:13px;line-height:1.6}
+.note{font-size:12px;color:#5c6e7d;line-height:1.7}
+details{margin-top:15px;font-size:13px;line-height:1.7}
+summary{font-weight:700;cursor:pointer}
+.copy{background:#fff;border:1px solid #96b5c1;color:#17616a;border-radius:8px;padding:9px 12px;margin-top:12px;font-weight:700}
+</style></head>
+<body><header><h1>UTM・MGRS 座標計算</h1><p>既知座標 ＋ 方位角 ＋ 水平距離 → 移動先座標</p></header>
+<div class="tabs"><button class="active" data-tab="utm">UTM入力</button><button data-tab="mgrs">MGRS入力</button></div>
+<section id="utm" class="panel active">
+ <div class="card"><h2>自己位置（UTM）</h2><div class="fields">
+ <div class="field"><label for="uz">ゾーン（1〜60）</label><input id="uz" type="number" value="54" min="1" max="60"></div>
+ <div class="field"><label for="uh">半球</label><select id="uh"><option value="N">北半球（N）</option><option value="S">南半球（S）</option></select></div>
+ <div class="field"><label for="ue">東距 E（m）</label><input id="ue" type="number" value="350000"></div>
+ <div class="field"><label for="un">北距 N（m）</label><input id="un" type="number" value="3900000"></div>
+ </div></div>
+ <div class="card"><h2>方位角・距離</h2><div class="fields">
+ <div class="field"><label for="ud">水平距離（m）</label><input id="ud" type="number" value="2000" min="0"></div>
+ <div class="field"><label for="ua">方位角</label><input id="ua" type="number" value="800"></div>
+ <div class="field wide"><label for="uu">角度単位</label><select id="uu"><option value="mil">6400ミル</option><option value="deg">度（360°）</option></select></div>
+ </div><button class="go" id="ub">計算する</button><div id="ur" aria-live="polite"></div></div>
+</section>
+<section id="mgrs" class="panel">
+ <div class="card"><h2>自己位置（MGRS・1m精度）</h2><div class="fields">
+ <div class="field"><label for="mz">ゾーン（1〜60）</label><input id="mz" type="number" value="54"></div>
+ <div class="field"><label for="mb">緯度帯</label><input id="mb" value="S" maxlength="1" autocapitalize="characters"></div>
+ <div class="field wide"><label for="ms">100km方眼（2文字）</label><input id="ms" value="UE" maxlength="2" autocapitalize="characters"></div>
+ <div class="field"><label for="me">東距5桁（m）</label><input id="me" type="number" value="50000"></div>
+ <div class="field"><label for="mn">北距5桁（m）</label><input id="mn" type="number" value="0"></div>
+ </div></div>
+ <div class="card"><h2>方位角・距離</h2><div class="fields">
+ <div class="field"><label for="md">水平距離（m）</label><input id="md" type="number" value="2000" min="0"></div>
+ <div class="field"><label for="ma">方位角</label><input id="ma" type="number" value="800"></div>
+ <div class="field wide"><label for="mu">角度単位</label><select id="mu"><option value="mil">6400ミル</option><option value="deg">度（360°）</option></select></div>
+ </div><button class="go" id="mbtn">計算する</button><div id="mr" aria-live="polite"></div></div>
+</section>
+<div class="card"><details><summary>計算条件・注意事項</summary>
+<p>WGS84のUTM座標を使用します。方位角はUTM格子北から時計回りに測った角度です。磁北方位角を使用する場合は、磁北偏差・子午線収差を考慮してください。</p>
+<p>入力距離は水平距離です。計算は平面座標上の簡易順計算で、地表距離とUTM格子距離の縮尺差は補正していません。高精度測量では補正が必要です。</p>
+<p>目標がUTMゾーン境界を越える場合やMGRS緯度帯境界付近では、地理座標に基づく厳密な再投影が必要です。このアプリは同一ゾーン内の一般的な地図ナビゲーション用です。</p>
+<p>実際の位置決定では地図・GNSS等と照合してください。射撃諸元や弾道の計算機能はありません。</p>
+</details></div>
+<script>
+"use strict";
+const $=id=>document.getElementById(id);
+const colSets=["ABCDEFGH","JKLMNPQR","STUVWXYZ"];
+const rowLetters="ABCDEFGHJKLMNPQRSTUV";
+const bands="CDEFGHJKLMNPQRSTUVWX";
+const bandMin=[1100000,2000000,2800000,3700000,4600000,5500000,6400000,7300000,8200000,9100000,0,800000,1700000,2600000,3500000,4400000,5300000,6200000,7000000,7900000];
+function fail(message){throw Error(message);}
+function num(id){const x=$(id).value.trim();if(!x)fail("未入力の項目があります。");const n=Number(x);if(!Number.isFinite(n))fail("数値を確認してください。");return n;}
+function intRange(v,lo,hi,name){if(!Number.isInteger(v)||v<lo||v>hi)fail(name+"の範囲を確認してください。");}
+function rad(a,unit){const m=unit==="mil"?6400:360;if(a<0||a>m)fail("方位角は0〜"+m+"で入力してください。");return a*2*Math.PI/m;}
+function utmLatitude(easting,northing,hem){
+ const a=6378137, f=1/298.257223563, ecc=f*(2-f), e1=(1-Math.sqrt(1-ecc))/(1+Math.sqrt(1-ecc));
+ const x=easting-500000, y=hem==="S"?northing-10000000:northing;
+ const m=y/0.9996, mu=m/(a*(1-ecc/4-3*ecc*ecc/64-5*ecc**3/256));
+ const phi=mu+(3*e1/2-27*e1**3/32)*Math.sin(2*mu)+(21*e1**2/16-55*e1**4/32)*Math.sin(4*mu)+(151*e1**3/96)*Math.sin(6*mu)+(1097*e1**4/512)*Math.sin(8*mu);
+ const ep2=ecc/(1-ecc), c1=ep2*Math.cos(phi)**2,t1=Math.tan(phi)**2;
+ const n1=a/Math.sqrt(1-ecc*Math.sin(phi)**2), r1=a*(1-ecc)/(1-ecc*Math.sin(phi)**2)**1.5;
+ const d=x/(n1*0.9996);
+ return (phi-(n1*Math.tan(phi)/r1)*(d*d/2-(5+3*t1+10*c1-4*c1*c1-9*ep2)*d**4/24+(61+90*t1+298*c1+45*t1*t1-252*ep2-3*c1*c1)*d**6/720))*180/Math.PI;
+}
+function latitudeBand(lat){
+ if(lat< -80||lat>84)fail("MGRS対象の緯度範囲外です（南緯80°〜北緯84°）。");
+ return bands[Math.min(19,Math.floor((lat+80)/8))];
+}
+function toMgrs(zone,hem,e,n){
+ const lat=utmLatitude(e,n,hem);
+ const band=latitudeBand(lat);
+ const ci=Math.floor(e/100000)-1, ri=((Math.floor(n/100000)+(zone%2===0?5:0))%20+20)%20;
+ const cols=colSets[(zone-1)%3];
+ if(ci<0||ci>=8)fail("東距がMGRSの有効範囲外です。");
+ const col=cols[ci], row=rowLetters[ri];
+ const east=Math.floor(((e%100000)+100000)%100000);
+ const north=Math.floor(((n%100000)+100000)%100000);
+ return `${zone}${band} ${col}${row} ${String(east).padStart(5,"0")} ${String(north).padStart(5,"0")}`;
+}
+function fromMgrs(zone,band,square,e,n){
+ const cols=colSets[(zone-1)%3],ci=cols.indexOf(square[0]),ri=rowLetters.indexOf(square[1]);
+ if(ci<0||ri<0)fail("ゾーンに対応しない100km方眼です。");
+ const hem=bands.indexOf(band)<10?"S":"N";
+ const east=(ci+1)*100000+e;
+ const northBase=((ri-(zone%2===0?5:0)+20)%20)*100000+n;
+ const min=bandMin[bands.indexOf(band)];
+ // Select 2,000 km cycle by verifying latitude band.
+ let best=null;
+ for(let k=0;k<=5;k++){
+   const candidate=northBase+2000000*k;
+   if(candidate<0||candidate>10000000)continue;
+   const lat=utmLatitude(east,candidate,hem);
+   if(lat>= -80&&lat<=84&&latitudeBand(lat)===band){
+     best=candidate;break;
+   }
+ }
+ if(best===null)fail("MGRS座標と緯度帯が一致しません。入力値を確認してください。");
+ return {e:east,n:best,hem};
+}
+function format(n){return n.toLocaleString("ja-JP",{minimumFractionDigits:2,maximumFractionDigits:2});}
+function render(el,zone,hem,e,n,d,angle,unit){
+ const a=rad(angle,unit);
+ if(d<0||d>1000000)fail("距離は0〜1,000,000mで入力してください。");
+ const de=d*Math.sin(a),dn=d*Math.cos(a);
+ const ee=e+de,nn=n+dn;
+ if(ee<100000||ee>=900000||nn<0||nn>10000000)fail("計算後の座標が同一UTMゾーンの有効範囲外です。");
+ const mgrs=toMgrs(zone,hem,ee,nn);
+ el.innerHTML=`<div class="result"><small>移動先UTM座標</small><div class="pair"><div><small>Easting（m）</small><strong>${format(ee)}</strong></div><div><small>Northing（m）</small><strong>${format(nn)}</strong></div></div><div class="mgrs"><small>移動先MGRS（1m精度）</small><strong>${mgrs}</strong></div><button class="copy" type="button">結果を選択・コピー</button><p class="note">ΔE：${format(de)}m　ΔN：${format(dn)}m<br>UTMゾーン：${zone}${hem}</p></div>`;
+ el.querySelector(".copy").addEventListener("click",()=>{
+   const text=`UTM ${zone}${hem} E ${ee.toFixed(2)} N ${nn.toFixed(2)}\nMGRS ${mgrs}`;
+   const t=document.createElement("textarea");t.value=text;document.body.appendChild(t);t.select();document.execCommand("copy");t.remove();
+ });
+}
+function calculateUTM(){
+ const el=$("ur");try{
+  const zone=num("uz"),hem=$("uh").value,e=num("ue"),n=num("un");
+  intRange(zone,1,60,"ゾーン");
+  if(e<100000||e>=900000||n<0||n>10000000)fail("UTM東距・北距の範囲を確認してください。");
+  render(el,zone,hem,e,n,num("ud"),num("ua"),$("uu").value);
+ }catch(err){el.innerHTML=`<p class="error">${err.message}</p>`;}
+}
+function calculateMGRS(){
+ const el=$("mr");try{
+  const zone=num("mz"),band=$("mb").value.trim().toUpperCase(),square=$("ms").value.trim().toUpperCase();
+  intRange(zone,1,60,"ゾーン");
+  if(band.length!==1||!bands.includes(band))fail("緯度帯はC〜X（I・Oを除く）で入力してください。");
+  if(square.length!==2)fail("100km方眼は英字2文字で入力してください。");
+  const e=num("me"),n=num("mn");
+  intRange(e,0,99999,"東距5桁");intRange(n,0,99999,"北距5桁");
+  const utm=fromMgrs(zone,band,square,e,n);
+  render(el,zone,utm.hem,utm.e,utm.n,num("md"),num("ma"),$("mu").value);
+ }catch(err){el.innerHTML=`<p class="error">${err.message}</p>`;}
+}
+document.querySelectorAll(".tabs button").forEach(b=>b.addEventListener("click",()=>{
+ document.querySelectorAll(".tabs button").forEach(x=>x.classList.toggle("active",x===b));
+ document.querySelectorAll(".panel").forEach(x=>x.classList.toggle("active",x.id===b.dataset.tab));
+}));
+$("ub").addEventListener("click",calculateUTM);
+$("mbtn").addEventListener("click",calculateMGRS);
+calculateUTM();
+</script>
+<script>
+if ("serviceWorker" in navigator && location.protocol === "https:") {
+  window.addEventListener("load", () => {
+    navigator.serviceWorker.register("./sw.js").catch(console.warn);
+  });
+}
+</script></body></html>

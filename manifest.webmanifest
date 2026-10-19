@@ -1,0 +1,25 @@
+{
+  "name": "UTM・MGRS 座標計算",
+  "short_name": "座標計算",
+  "description": "UTM・MGRS座標を用いたオフライン対応の地図ナビゲーション計算機",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#f4f7fa",
+  "theme_color": "#17324d",
+  "lang": "ja",
+  "icons": [
+    {
+      "src": "./icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "./icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
