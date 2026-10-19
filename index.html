@@ -37,7 +37,7 @@ details{margin-top:15px;font-size:13px;line-height:1.7}
 summary{font-weight:700;cursor:pointer}
 .copy{background:#fff;border:1px solid #96b5c1;color:#17616a;border-radius:8px;padding:9px 12px;margin-top:12px;font-weight:700}
 </style></head>
-<body><header><h1>UTM・MGRS 座標計算</h1><p>既知座標 ＋ 方位角 ＋ 水平距離 → 移動先座標</p></header>
+<body><header><h1>UTM・MGRS 座標計算</h1><p>既知座標 ＋ 方位角 ＋ 観目距離 → 目標座標</p></header>
 <div class="tabs"><button class="active" data-tab="utm">UTM入力</button><button data-tab="mgrs">MGRS入力</button></div>
 <section id="utm" class="panel active">
  <div class="card"><h2>自己位置（UTM）</h2><div class="fields">
@@ -47,7 +47,7 @@ summary{font-weight:700;cursor:pointer}
  <div class="field"><label for="un">北距 N（m）</label><input id="un" type="number" value="3900000"></div>
  </div></div>
  <div class="card"><h2>方位角・距離</h2><div class="fields">
- <div class="field"><label for="ud">水平距離（m）</label><input id="ud" type="number" value="2000" min="0"></div>
+ <div class="field"><label for="ud">観目距離（m）</label><input id="ud" type="number" value="2000" min="0"></div>
  <div class="field"><label for="ua">方位角</label><input id="ua" type="number" value="800"></div>
  <div class="field wide"><label for="uu">角度単位</label><select id="uu"><option value="mil">6400ミル</option><option value="deg">度（360°）</option></select></div>
  </div><button class="go" id="ub">計算する</button><div id="ur" aria-live="polite"></div></div>
@@ -61,14 +61,14 @@ summary{font-weight:700;cursor:pointer}
  <div class="field"><label for="mn">北距5桁（m）</label><input id="mn" type="number" value="0"></div>
  </div></div>
  <div class="card"><h2>方位角・距離</h2><div class="fields">
- <div class="field"><label for="md">水平距離（m）</label><input id="md" type="number" value="2000" min="0"></div>
+ <div class="field"><label for="md">観目距離（m）</label><input id="md" type="number" value="2000" min="0"></div>
  <div class="field"><label for="ma">方位角</label><input id="ma" type="number" value="800"></div>
  <div class="field wide"><label for="mu">角度単位</label><select id="mu"><option value="mil">6400ミル</option><option value="deg">度（360°）</option></select></div>
  </div><button class="go" id="mbtn">計算する</button><div id="mr" aria-live="polite"></div></div>
 </section>
 <div class="card"><details><summary>計算条件・注意事項</summary>
 <p>WGS84のUTM座標を使用します。方位角はUTM格子北から時計回りに測った角度です。磁北方位角を使用する場合は、磁北偏差・子午線収差を考慮してください。</p>
-<p>入力距離は水平距離です。計算は平面座標上の簡易順計算で、地表距離とUTM格子距離の縮尺差は補正していません。高精度測量では補正が必要です。</p>
+<p>「観目距離」はこの計算では水平距離（地図上の平面距離）として扱います。斜距離を入力する場合は水平距離への換算が必要です。計算は平面座標上の簡易順計算で、地表距離とUTM格子距離の縮尺差は補正していません。高精度測量では補正が必要です。</p>
 <p>目標がUTMゾーン境界を越える場合やMGRS緯度帯境界付近では、地理座標に基づく厳密な再投影が必要です。このアプリは同一ゾーン内の一般的な地図ナビゲーション用です。</p>
 <p>実際の位置決定では地図・GNSS等と照合してください。射撃諸元や弾道の計算機能はありません。</p>
 </details></div>
@@ -136,7 +136,7 @@ function render(el,zone,hem,e,n,d,angle,unit){
  const ee=e+de,nn=n+dn;
  if(ee<100000||ee>=900000||nn<0||nn>10000000)fail("計算後の座標が同一UTMゾーンの有効範囲外です。");
  const mgrs=toMgrs(zone,hem,ee,nn);
- el.innerHTML=`<div class="result"><small>移動先UTM座標</small><div class="pair"><div><small>Easting（m）</small><strong>${format(ee)}</strong></div><div><small>Northing（m）</small><strong>${format(nn)}</strong></div></div><div class="mgrs"><small>移動先MGRS（1m精度）</small><strong>${mgrs}</strong></div><button class="copy" type="button">結果を選択・コピー</button><p class="note">ΔE：${format(de)}m　ΔN：${format(dn)}m<br>UTMゾーン：${zone}${hem}</p></div>`;
+ el.innerHTML=`<div class="result"><small>目標UTM座標</small><div class="pair"><div><small>Easting（m）</small><strong>${format(ee)}</strong></div><div><small>Northing（m）</small><strong>${format(nn)}</strong></div></div><div class="mgrs"><small>目標MGRS（1m精度）</small><strong>${mgrs}</strong></div><button class="copy" type="button">結果を選択・コピー</button><p class="note">ΔE：${format(de)}m　ΔN：${format(dn)}m<br>UTMゾーン：${zone}${hem}</p></div>`;
  el.querySelector(".copy").addEventListener("click",()=>{
    const text=`UTM ${zone}${hem} E ${ee.toFixed(2)} N ${nn.toFixed(2)}\nMGRS ${mgrs}`;
    const t=document.createElement("textarea");t.value=text;document.body.appendChild(t);t.select();document.execCommand("copy");t.remove();
